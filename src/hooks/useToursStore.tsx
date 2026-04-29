@@ -16,7 +16,6 @@ export interface EducationalTour {
 }
 
 const STORAGE_KEY = 'educational_tour_data';
-const LOGIN_KEY = 'user_logged_in';
 
 export function useEducationalTour() {
   const [tourData, setTourData] = useState<EducationalTour>({
@@ -32,12 +31,10 @@ export function useEducationalTour() {
     })),
   });
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Load tour from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    const loggedIn = localStorage.getItem(LOGIN_KEY);
     
     if (saved) {
       try {
@@ -45,10 +42,6 @@ export function useEducationalTour() {
       } catch (e) {
         console.error('Failed to load tour:', e);
       }
-    }
-    
-    if (loggedIn === 'true') {
-      setIsLoggedIn(true);
     }
     
     setIsLoaded(true);
@@ -60,21 +53,6 @@ export function useEducationalTour() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(tourData));
     }
   }, [tourData, isLoaded]);
-
-  const login = useCallback((password: string): boolean => {
-    // Simple password check - change this to your password
-    if (password === "admin123") {
-      setIsLoggedIn(true);
-      localStorage.setItem(LOGIN_KEY, 'true');
-      return true;
-    }
-    return false;
-  }, []);
-
-  const logout = useCallback(() => {
-    setIsLoggedIn(false);
-    localStorage.setItem(LOGIN_KEY, 'false');
-  }, []);
 
   const updateTourInfo = useCallback((updates: Partial<Omit<EducationalTour, 'days'>>) => {
     setTourData((prev) => ({ ...prev, ...updates }));
@@ -102,9 +80,6 @@ export function useEducationalTour() {
   return {
     tourData,
     isLoaded,
-    isLoggedIn,
-    login,
-    logout,
     updateTourInfo,
     updateDay,
     getDay,

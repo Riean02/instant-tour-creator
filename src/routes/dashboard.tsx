@@ -1,273 +1,286 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEducationalTour } from "../hooks/useToursStore";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+
+const DAY_COPY = [
+  {
+    title: "Arrival & First Impressions",
+    description:
+      "The opening day sets the tone with a warm introduction, a wide establishing scene, and a first look at the locations that shape the tour.",
+  },
+  {
+    title: "Culture in Motion",
+    description:
+      "A closer look at the everyday details, textures, and people that make the destination feel alive and memorable.",
+  },
+  {
+    title: "Landscape & Perspective",
+    description:
+      "This chapter focuses on scale, light, and atmosphere, turning the environment itself into the main character.",
+  },
+  {
+    title: "Moments Worth Framing",
+    description:
+      "A softer, more personal day centered on portraits, expressions, and the kind of moments that feel immediate and real.",
+  },
+  {
+    title: "Textures, Food, and Detail",
+    description:
+      "Everyday surfaces, meals, and small visual details become part of the story and give the tour its tactile identity.",
+  },
+  {
+    title: "Connection & Community",
+    description:
+      "This section brings the focus back to people, showing the relationships and shared experiences that tie the trip together.",
+  },
+  {
+    title: "Closing Scene",
+    description:
+      "The final day feels reflective and cinematic, wrapping everything into a satisfying final frame.",
+  },
+] as const;
+
+type TourDay = {
+  dayNumber: number;
+  title: string;
+  description: string;
+  image?: string;
+};
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
 });
 
 function Dashboard() {
-  const navigate = useNavigate();
-  const { tourData, isLoaded, isLoggedIn, logout, updateTourInfo } = useEducationalTour();
-  const [isEditingTour, setIsEditingTour] = useState(false);
-  const [tourInfo, setTourInfo] = useState({
-    tourTitle: tourData.tourTitle,
-    tourDescription: tourData.tourDescription,
-    subject: tourData.subject,
-    institution: tourData.institution,
-  });
+  const { tourData, isLoaded } = useEducationalTour();
+
+  const galleryDays = useMemo<TourDay[]>(
+    () =>
+      tourData.days.map((day, index) => ({
+        dayNumber: day.dayNumber,
+        title: DAY_COPY[index]?.title ?? `Day ${day.dayNumber}`,
+        description: DAY_COPY[index]?.description ?? "A visual chapter from the tour.",
+        image: day.image,
+      })),
+    [tourData.days]
+  );
 
   if (!isLoaded) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <p className="text-slate-900">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#f3efe7]">
+        <p className="text-slate-900">Loading gallery...</p>
       </div>
     );
   }
 
-  if (!isLoggedIn) {
-    navigate({ to: "/" });
-    return null;
-  }
-
-  const handleSaveTourInfo = () => {
-    updateTourInfo(tourInfo);
-    setIsEditingTour(false);
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-slate-200 sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">Content Dashboard</h1>
-              <p className="text-slate-600 mt-1">Edit your 7-day educational tour content</p>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => {
-                logout();
-                navigate({ to: "/" });
-              }}
-            >
-              Logout
-            </Button>
+    <div className="min-h-screen bg-[#f4efe6] text-slate-950">
+      <header className="sticky top-0 z-40 border-b border-black/5 bg-[#f4efe6]/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-8">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">Educational Tour</p>
+            <h1 className="text-xl font-semibold md:text-2xl">{tourData.tourTitle || "Tour Gallery"}</h1>
           </div>
+          <Button variant="outline" asChild className="rounded-full bg-white/80 shadow-sm">
+            <Link to="/">Home</Link>
+          </Button>
         </div>
-      </div>
+      </header>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Tour Info Card */}
-        <Card className="mb-8 bg-white border border-slate-200">
-          <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl">Tour Information</CardTitle>
-              {!isEditingTour && (
-                <Button
-                  variant="outline"
-                  onClick={() => setIsEditingTour(true)}
-                >
-                  ✏️ Edit
-                </Button>
-              )}
+      <main className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-10">
+        <section className="grid gap-6 lg:grid-cols-[1.35fr_0.85fr]">
+          <Card className="overflow-hidden border-none bg-[#111827] text-white shadow-2xl shadow-black/10">
+            <div className="grid gap-0 lg:grid-cols-[1fr_0.75fr]">
+              <div className="relative min-h-[280px] overflow-hidden bg-gradient-to-br from-[#1f2937] via-[#374151] to-[#b45309] p-8 lg:min-h-[420px] lg:p-10">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(251,191,36,0.25),transparent_40%)]" />
+                <div className="relative z-10 flex h-full flex-col justify-between">
+                  <div className="max-w-xl">
+                    <p className="text-xs uppercase tracking-[0.4em] text-white/65">7-Day Learning Journey</p>
+                    <h2 className="mt-4 text-4xl font-semibold leading-tight md:text-6xl">A visual story built from your own saved images.</h2>
+                    <p className="mt-4 max-w-lg text-sm leading-6 text-white/75 md:text-base">
+                      Tap any collage to open a larger view with the stored local image and a hardcoded description for that day.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3 text-sm text-white/80 sm:grid-cols-3">
+                    <div className="rounded-2xl border border-white/15 bg-white/8 p-4 backdrop-blur">
+                      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Format</p>
+                      <p className="mt-2 font-medium">Collage gallery</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/15 bg-white/8 p-4 backdrop-blur">
+                      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Images</p>
+                      <p className="mt-2 font-medium">Stored locally</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/15 bg-white/8 p-4 backdrop-blur">
+                      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Copy</p>
+                      <p className="mt-2 font-medium">Hardcoded descriptions</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-0 bg-[#f8f4ed] text-slate-950 lg:grid-rows-2">
+                {galleryDays.slice(0, 2).map((day, index) => (
+                  <DayTile key={day.dayNumber} day={day} tall={index === 0} />
+                ))}
+              </div>
             </div>
-          </CardHeader>
-          <CardContent className="pt-6">
-            {isEditingTour ? (
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="tourTitle">Tour Title</Label>
-                  <Input
-                    id="tourTitle"
-                    value={tourInfo.tourTitle}
-                    onChange={(e) => setTourInfo({ ...tourInfo, tourTitle: e.target.value })}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="subject">Subject/Topic</Label>
-                  <Input
-                    id="subject"
-                    placeholder="e.g., Environmental Science, History, Art"
-                    value={tourInfo.subject}
-                    onChange={(e) => setTourInfo({ ...tourInfo, subject: e.target.value })}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="institution">Institution</Label>
-                  <Input
-                    id="institution"
-                    placeholder="e.g., University Name"
-                    value={tourInfo.institution}
-                    onChange={(e) => setTourInfo({ ...tourInfo, institution: e.target.value })}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="tourDescription">Tour Description</Label>
-                  <Textarea
-                    id="tourDescription"
-                    placeholder="Describe the purpose and overview of your educational tour..."
-                    value={tourInfo.tourDescription}
-                    onChange={(e) => setTourInfo({ ...tourInfo, tourDescription: e.target.value })}
-                    rows={4}
-                    className="mt-1"
-                  />
-                </div>
-                <div className="flex gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsEditingTour(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSaveTourInfo}
-                    className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
-                  >
-                    Save Changes
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900">{tourData.tourTitle}</h3>
-                  <p className="text-slate-600 mt-1">{tourData.tourDescription}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-slate-600">Subject</p>
-                    <p className="font-semibold text-slate-900">{tourData.subject || "Not set"}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-600">Institution</p>
-                    <p className="font-semibold text-slate-900">{tourData.institution || "Not set"}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          </Card>
 
-        {/* 7 Days Grid */}
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">7-Day Content</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {tourData.days.map((day) => (
+          <Card className="border border-black/5 bg-white/75 shadow-lg shadow-black/5 backdrop-blur">
+            <CardHeader className="border-b border-black/5 pb-4">
+              <CardTitle className="text-2xl">Tour Notes</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              <p className="text-sm leading-6 text-slate-600">
+                {tourData.tourDescription || "This gallery uses the saved local tour images and static day copy so the page stays public."}
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Subject</p>
+                  <p className="mt-2 font-semibold">{tourData.subject || "Not set"}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Institution</p>
+                  <p className="mt-2 font-semibold">{tourData.institution || "Not set"}</p>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
+                Images remain in local browser storage through the existing tour data. Update them from any edit flow you add later.
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="mt-10">
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-slate-500">Collection</p>
+              <h2 className="mt-2 text-3xl font-semibold">7-day collage</h2>
+            </div>
+            <p className="max-w-md text-sm text-slate-500">
+              Click a card to expand it, view the stored image, and read the hardcoded description for that day.
+            </p>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {galleryDays.map((day) => (
               <DayCard key={day.dayNumber} day={day} />
             ))}
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }
 
-function DayCard({ day }: { day: { dayNumber: number; title: string; description: string; image?: string } }) {
-  const navigate = useNavigate();
-  const { updateDay } = useEducationalTour();
-  const [isOpen, setIsOpen] = useState(false);
-  const [dayData, setDayData] = useState({
-    title: day.title,
-    description: day.description,
-    image: day.image || "",
-  });
+function DayTile({ day, tall = false }: { day: TourDay; tall?: boolean }) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button className={`group relative block h-full min-h-[190px] overflow-hidden text-left ${tall ? "lg:min-h-[210px]" : ""}`}>
+          {day.image ? (
+            <img
+              src={day.image}
+              alt={day.title}
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-400 via-orange-500 to-slate-900" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+          <div className="relative z-10 flex h-full flex-col justify-between p-5 text-white">
+            <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/70">
+              <span>Day {day.dayNumber}</span>
+              <span>Open</span>
+            </div>
+            <div>
+              <h3 className="text-2xl font-semibold leading-tight">{day.title}</h3>
+              <p className="mt-2 line-clamp-2 text-sm text-white/80">{day.description}</p>
+            </div>
+          </div>
+        </button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[760px]">
+        <DialogHeader>
+          <DialogTitle>Day {day.dayNumber}</DialogTitle>
+          <DialogDescription>{day.title}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-3xl border border-black/5 bg-slate-100">
+            {day.image ? (
+              <img src={day.image} alt={day.title} className="h-[360px] w-full object-cover" />
+            ) : (
+              <div className="flex h-[360px] items-center justify-center bg-gradient-to-br from-amber-300 to-orange-500 text-6xl font-semibold text-white">
+                {day.dayNumber}
+              </div>
+            )}
+          </div>
+          <div className="space-y-3">
+            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Description</p>
+            <p className="text-base leading-7 text-slate-700">{day.description}</p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-  const handleSave = () => {
-    updateDay(day.dayNumber, dayData);
-    setIsOpen(false);
-  };
+function DayCard({ day }: { day: TourDay }) {
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Card className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 overflow-hidden border border-slate-200 bg-white">
-          <div className="relative h-40 bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center overflow-hidden">
+        <Card className="group cursor-pointer overflow-hidden border border-black/5 bg-white/85 shadow-lg shadow-black/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+          <div className="relative h-64 overflow-hidden bg-slate-100">
             {day.image ? (
               <img
                 src={day.image}
-                alt={`Day ${day.dayNumber}`}
-                className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300"
+                alt={day.title}
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
             ) : (
-              <div className="text-white text-5xl font-bold opacity-70">{day.dayNumber}</div>
+              <div className="flex h-full items-center justify-center bg-gradient-to-br from-[#d97706] via-[#f59e0b] to-[#7c2d12] text-7xl font-semibold text-white">
+                {day.dayNumber}
+              </div>
             )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
+            <div className="absolute left-4 top-4 rounded-full bg-white/85 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-700 backdrop-blur">
+              Day {day.dayNumber}
+            </div>
           </div>
-          <CardContent className="pt-4">
-            <h3 className="font-semibold text-slate-900 mb-2">{day.title}</h3>
-            <p className="text-sm text-slate-600 line-clamp-2">{day.description || "Click to add content"}</p>
-            <p className="text-xs text-orange-600 font-medium mt-3">Click to edit →</p>
+          <CardContent className="space-y-3 p-5">
+            <h3 className="text-xl font-semibold leading-tight text-slate-950">{day.title}</h3>
+            <p className="text-sm leading-6 text-slate-600 line-clamp-3">{day.description}</p>
+            <div className="flex items-center justify-between pt-1 text-xs uppercase tracking-[0.25em] text-slate-400">
+              <span>Click to open</span>
+              <span>Gallery</span>
+            </div>
           </CardContent>
         </Card>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[760px]">
         <DialogHeader>
-          <DialogTitle>Edit Day {day.dayNumber}</DialogTitle>
-          <DialogDescription>
-            Add your educational content, images, and descriptions for this day
-          </DialogDescription>
+          <DialogTitle>Day {day.dayNumber}</DialogTitle>
+          <DialogDescription>{day.title}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div>
-            <Label htmlFor="dayTitle">Day Title</Label>
-            <Input
-              id="dayTitle"
-              value={dayData.title}
-              onChange={(e) => setDayData({ ...dayData, title: e.target.value })}
-              placeholder="e.g., Museum Visit & Historical Overview"
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="dayDescription">Description & Learning Objectives</Label>
-            <Textarea
-              id="dayDescription"
-              value={dayData.description}
-              onChange={(e) => setDayData({ ...dayData, description: e.target.value })}
-              placeholder="Describe what students will learn, activities, key points, and observations..."
-              rows={6}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="dayImage">Image URL</Label>
-            <Input
-              id="dayImage"
-              value={dayData.image}
-              onChange={(e) => setDayData({ ...dayData, image: e.target.value })}
-              placeholder="e.g., https://example.com/image.jpg"
-              className="mt-1"
-            />
-            {dayData.image && (
-              <div className="mt-3 rounded-lg overflow-hidden border border-slate-200">
-                <img
-                  src={dayData.image}
-                  alt="Preview"
-                  className="w-full h-48 object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
-                />
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-3xl border border-black/5 bg-slate-100">
+            {day.image ? (
+              <img src={day.image} alt={day.title} className="h-[360px] w-full object-cover" />
+            ) : (
+              <div className="flex h-[360px] items-center justify-center bg-gradient-to-br from-amber-300 to-orange-500 text-6xl font-semibold text-white">
+                {day.dayNumber}
               </div>
             )}
           </div>
-          <div className="flex gap-2 pt-4">
-            <Button variant="outline" onClick={() => setIsOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
-            >
-              Save Day {day.dayNumber}
-            </Button>
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Description</p>
+            <p className="text-base leading-7 text-slate-700">{day.description}</p>
           </div>
         </div>
       </DialogContent>
