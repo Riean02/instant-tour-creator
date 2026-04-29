@@ -3,7 +3,7 @@ import { useEducationalTour } from "../hooks/useToursStore";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 
 const DAY_COPY = [
   {
@@ -48,7 +48,27 @@ type TourDay = {
   title: string;
   description: string;
   image?: string;
+  images?: string[];
 };
+
+function readFilesAsDataUrls(files: FileList | File[]) {
+  return Promise.all(
+    Array.from(files).map(
+      (file) =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+          reader.readAsDataURL(file);
+        })
+    )
+  );
+}
+
+function getDisplayImages(day: TourDay) {
+  const images = day.images?.length ? day.images : day.image ? [day.image] : [];
+  return images;
+}
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
@@ -64,6 +84,7 @@ function Dashboard() {
         title: DAY_COPY[index]?.title ?? `Day ${day.dayNumber}`,
         description: DAY_COPY[index]?.description ?? "A visual chapter from the tour.",
         image: day.image,
+        images: day.images ?? (day.image ? [day.image] : []),
       })),
     [tourData.days]
   );
@@ -178,24 +199,18 @@ function Dashboard() {
 }
 
 function DayTile({ day, tall = false }: { day: TourDay; tall?: boolean }) {
+  const images = getDisplayImages(day);
+
   return (
     <Dialog>
       <DialogTrigger asChild>
         <button className={`group relative block h-full min-h-[190px] overflow-hidden text-left ${tall ? "lg:min-h-[210px]" : ""}`}>
-          {day.image ? (
-            <img
-              src={day.image}
-              alt={day.title}
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-400 via-orange-500 to-slate-900" />
-          )}
+          <ImageBackdrop images={images} alt={day.title} />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
           <div className="relative z-10 flex h-full flex-col justify-between p-5 text-white">
             <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/70">
               <span>Day {day.dayNumber}</span>
-              <span>Open</span>
+              <span>{images.length > 1 ? `${images.length} photos` : "Open"}</span>
             </div>
             <div>
               <h3 className="text-2xl font-semibold leading-tight">{day.title}</h3>
@@ -210,15 +225,7 @@ function DayTile({ day, tall = false }: { day: TourDay; tall?: boolean }) {
           <DialogDescription>{day.title}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-3xl border border-black/5 bg-slate-100">
-            {day.image ? (
-              <img src={day.image} alt={day.title} className="h-[360px] w-full object-cover" />
-            ) : (
-              <div className="flex h-[360px] items-center justify-center bg-gradient-to-br from-amber-300 to-orange-500 text-6xl font-semibold text-white">
-                {day.dayNumber}
-              </div>
-            )}
-          </div>
+          <ImageGallery images={images} title={day.title} dayNumber={day.dayNumber} />
           <div className="space-y-3">
             <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Description</p>
             <p className="text-base leading-7 text-slate-700">{day.description}</p>
@@ -230,28 +237,51 @@ function DayTile({ day, tall = false }: { day: TourDay; tall?: boolean }) {
 }
 
 function DayCard({ day }: { day: TourDay }) {
+  const { updateDay } = useEducationalTour();
   const [isOpen, setIsOpen] = useState(false);
+  const [images, setImages] = useState<string[]>(getDisplayImages(day));
+
+  useEffect(() => {
+    setImages(getDisplayImages(day));
+  }, [day.image, day.images]);
+
+  const handleAddImages = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files?.length) {
+      return;
+    }
+
+    const newImages = await readFilesAsDataUrls(files);
+    const mergedImages = [...images, ...newImages];
+    setImages(mergedImages);
+    updateDay(day.dayNumber, {
+      images: mergedImages,
+      image: mergedImages[0] || "",
+    });
+    event.target.value = "";
+  };
+
+  const handleSave = () => {
+    // Day data stays local in browser storage through the existing hook state.
+    // The day dialog can be extended later to persist image arrays directly.
+    setIsOpen(false);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Card className="group cursor-pointer overflow-hidden border border-black/5 bg-white/85 shadow-lg shadow-black/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
           <div className="relative h-64 overflow-hidden bg-slate-100">
-            {day.image ? (
-              <img
-                src={day.image}
-                alt={day.title}
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center bg-gradient-to-br from-[#d97706] via-[#f59e0b] to-[#7c2d12] text-7xl font-semibold text-white">
-                {day.dayNumber}
-              </div>
-            )}
+            <ImageBackdrop images={images} alt={day.title} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
             <div className="absolute left-4 top-4 rounded-full bg-white/85 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-700 backdrop-blur">
               Day {day.dayNumber}
             </div>
+            {images.length > 1 && (
+              <div className="absolute right-4 top-4 rounded-full bg-black/60 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-white backdrop-blur">
+                {images.length} photos
+              </div>
+            )}
           </div>
           <CardContent className="space-y-3 p-5">
             <h3 className="text-xl font-semibold leading-tight text-slate-950">{day.title}</h3>
@@ -269,21 +299,85 @@ function DayCard({ day }: { day: TourDay }) {
           <DialogDescription>{day.title}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-3xl border border-black/5 bg-slate-100">
-            {day.image ? (
-              <img src={day.image} alt={day.title} className="h-[360px] w-full object-cover" />
-            ) : (
-              <div className="flex h-[360px] items-center justify-center bg-gradient-to-br from-amber-300 to-orange-500 text-6xl font-semibold text-white">
-                {day.dayNumber}
-              </div>
-            )}
-          </div>
+          <ImageGallery images={images} title={day.title} dayNumber={day.dayNumber} />
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Description</p>
             <p className="text-base leading-7 text-slate-700">{day.description}</p>
           </div>
+          <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Add more images</p>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleAddImages}
+              className="mt-3 block w-full text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-slate-700"
+            />
+            <p className="mt-2 text-sm text-slate-500">
+              Selected images stay in local browser storage for this day and can be added in batches.
+            </p>
+          </div>
+          <div className="flex items-center justify-end gap-3">
+            <Button variant="outline" onClick={() => setIsOpen(false)}>
+              Close
+            </Button>
+            <Button onClick={handleSave} className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700">
+              Done
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ImageBackdrop({ images, alt }: { images: string[]; alt: string }) {
+  if (!images.length) {
+    return <div className="absolute inset-0 bg-gradient-to-br from-amber-400 via-orange-500 to-slate-900" />;
+  }
+
+  if (images.length === 1) {
+    return <img src={images[0]} alt={alt} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />;
+  }
+
+  return (
+    <div className="absolute inset-0 grid grid-cols-2 gap-1 bg-slate-200 p-1">
+      {images.slice(0, 4).map((image, index) => (
+        <img
+          key={`${image}-${index}`}
+          src={image}
+          alt={`${alt} ${index + 1}`}
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+      ))}
+    </div>
+  );
+}
+
+function ImageGallery({ images, title, dayNumber }: { images: string[]; title: string; dayNumber: number }) {
+  if (!images.length) {
+    return (
+      <div className="flex h-[360px] items-center justify-center rounded-3xl border border-black/5 bg-gradient-to-br from-amber-300 to-orange-500 text-6xl font-semibold text-white">
+        {dayNumber}
+      </div>
+    );
+  }
+
+  if (images.length === 1) {
+    return (
+      <div className="overflow-hidden rounded-3xl border border-black/5 bg-slate-100">
+        <img src={images[0]} alt={title} className="h-[360px] w-full object-cover" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {images.map((image, index) => (
+        <div key={`${image}-${index}`} className="overflow-hidden rounded-3xl border border-black/5 bg-slate-100">
+          <img src={image} alt={`${title} ${index + 1}`} className="h-56 w-full object-cover" />
+        </div>
+      ))}
+    </div>
   );
 }

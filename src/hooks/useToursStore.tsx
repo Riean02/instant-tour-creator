@@ -5,6 +5,7 @@ export interface DayContent {
   title: string;
   description: string;
   image?: string;
+  images?: string[];
 }
 
 export interface EducationalTour {
@@ -17,6 +18,23 @@ export interface EducationalTour {
 
 const STORAGE_KEY = 'educational_tour_data';
 
+function normalizeDay(day: DayContent): DayContent {
+  const images = day.images?.length ? day.images : day.image ? [day.image] : [];
+
+  return {
+    ...day,
+    images,
+    image: images[0] || "",
+  };
+}
+
+function normalizeTourData(data: EducationalTour): EducationalTour {
+  return {
+    ...data,
+    days: data.days.map(normalizeDay),
+  };
+}
+
 export function useEducationalTour() {
   const [tourData, setTourData] = useState<EducationalTour>({
     tourTitle: "My Educational Tour",
@@ -28,6 +46,7 @@ export function useEducationalTour() {
       title: `Day ${i + 1}`,
       description: "",
       image: "",
+      images: [],
     })),
   });
   const [isLoaded, setIsLoaded] = useState(false);
@@ -38,7 +57,7 @@ export function useEducationalTour() {
     
     if (saved) {
       try {
-        setTourData(JSON.parse(saved));
+        setTourData(normalizeTourData(JSON.parse(saved)));
       } catch (e) {
         console.error('Failed to load tour:', e);
       }
@@ -63,7 +82,14 @@ export function useEducationalTour() {
       setTourData((prev) => ({
         ...prev,
         days: prev.days.map((day) =>
-          day.dayNumber === dayNumber ? { ...day, ...updates } : day
+          day.dayNumber === dayNumber
+            ? normalizeDay({
+                ...day,
+                ...updates,
+                images: updates.images ?? day.images,
+                image: updates.images ? updates.images[0] || "" : updates.image ?? day.image ?? "",
+              })
+            : day
         ),
       }));
     },
