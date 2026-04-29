@@ -9,38 +9,107 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TourRouteImport } from './routes/tour'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ToursTourIdRouteImport } from './routes/tours.$tourId'
+import { Route as ToursTourIdDayDayNumberRouteImport } from './routes/tours.$tourId.day.$dayNumber'
 
+const TourRoute = TourRouteImport.update({
+  id: '/tour',
+  path: '/tour',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ToursTourIdRoute = ToursTourIdRouteImport.update({
+  id: '/tours/$tourId',
+  path: '/tours/$tourId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToursTourIdDayDayNumberRoute = ToursTourIdDayDayNumberRouteImport.update({
+  id: '/day/$dayNumber',
+  path: '/day/$dayNumber',
+  getParentRoute: () => ToursTourIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/tour': typeof TourRoute
+  '/tours/$tourId': typeof ToursTourIdRouteWithChildren
+  '/tours/$tourId/day/$dayNumber': typeof ToursTourIdDayDayNumberRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/tour': typeof TourRoute
+  '/tours/$tourId': typeof ToursTourIdRouteWithChildren
+  '/tours/$tourId/day/$dayNumber': typeof ToursTourIdDayDayNumberRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/tour': typeof TourRoute
+  '/tours/$tourId': typeof ToursTourIdRouteWithChildren
+  '/tours/$tourId/day/$dayNumber': typeof ToursTourIdDayDayNumberRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/tour'
+    | '/tours/$tourId'
+    | '/tours/$tourId/day/$dayNumber'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/tour'
+    | '/tours/$tourId'
+    | '/tours/$tourId/day/$dayNumber'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/tour'
+    | '/tours/$tourId'
+    | '/tours/$tourId/day/$dayNumber'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRoute
+  TourRoute: typeof TourRoute
+  ToursTourIdRoute: typeof ToursTourIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tour': {
+      id: '/tour'
+      path: '/tour'
+      fullPath: '/tour'
+      preLoaderRoute: typeof TourRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +117,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tours/$tourId': {
+      id: '/tours/$tourId'
+      path: '/tours/$tourId'
+      fullPath: '/tours/$tourId'
+      preLoaderRoute: typeof ToursTourIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tours/$tourId/day/$dayNumber': {
+      id: '/tours/$tourId/day/$dayNumber'
+      path: '/day/$dayNumber'
+      fullPath: '/tours/$tourId/day/$dayNumber'
+      preLoaderRoute: typeof ToursTourIdDayDayNumberRouteImport
+      parentRoute: typeof ToursTourIdRoute
+    }
   }
 }
 
+interface ToursTourIdRouteChildren {
+  ToursTourIdDayDayNumberRoute: typeof ToursTourIdDayDayNumberRoute
+}
+
+const ToursTourIdRouteChildren: ToursTourIdRouteChildren = {
+  ToursTourIdDayDayNumberRoute: ToursTourIdDayDayNumberRoute,
+}
+
+const ToursTourIdRouteWithChildren = ToursTourIdRoute._addFileChildren(
+  ToursTourIdRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
+  TourRoute: TourRoute,
+  ToursTourIdRoute: ToursTourIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
